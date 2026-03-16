@@ -1,0 +1,271 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (matches Firebase Auth uid)
+    // Fields:
+    //   - email: string (required, valid email)
+    //   - experienceLevel: string (required, in ['Principiante', 'Intermedio', 'Experto'])
+    //   - isPremium: boolean (required)
+    //
+    // Collection: production_logs
+    // Document ID: {logId}
+    // Fields:
+    //   - userId: string (required, matches request.auth.uid)
+    //   - loteId: number (required)
+    //   - cantidad: number (required, >= 0)
+    //   - fecha: timestamp (required)
+    //
+    // Collection: inventory
+    // Document ID: {itemId}
+    // Fields:
+    //   - userId: string (required, matches request.auth.uid)
+    //   - nombre: string (required)
+    //   - kilosActuales: number (required, >= 0)
+    //   - capacidadMaxima: number (required, >= 0)
+    //   - ultimoPrecio: number (required, >= 0)
+    //   - fechaActualizacion: timestamp (required)
+    //
+    // Collection: incubation_cycles
+    // Document ID: {cycleId}
+    // Fields:
+    //   - userId: string (required, matches request.auth.uid)
+    //   - especie: string (required)
+    //   - cantidadHuevos: number (required, >= 0)
+    //   - fechaInicio: timestamp (required)
+    //   - diasIncubacion: number (required, >= 0)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+    
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+    
+    // Domain Validators
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['email', 'experienceLevel', 'isPremium', 'name']) &&
+             (!('email' in data) || data.email == null || isValidEmail(data.email)) &&
+             (!('experienceLevel' in data) || data.experienceLevel in ['Principiante', 'Intermedio', 'Experto']) &&
+             (!('isPremium' in data) || data.isPremium is bool) &&
+             (!('name' in data) || (data.name is string && data.name.size() >= 0 && data.name.size() <= 50));
+    }
+
+    function isValidProductionLog(data) {
+      return hasOnlyAllowedFields(['userId', 'loteId', 'cantidad', 'fecha']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.loteId is string && data.loteId.size() > 0 && data.loteId.size() <= 100 &&
+             data.cantidad is number && data.cantidad >= 0 &&
+             data.fecha is timestamp;
+    }
+
+    function isValidInventoryItem(data) {
+      return hasOnlyAllowedFields(['userId', 'nombre', 'kilosActuales', 'capacidadMaxima', 'ultimoPrecio', 'fechaActualizacion']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.nombre is string && data.nombre.size() > 0 && data.nombre.size() <= 100 &&
+             data.kilosActuales is number && data.kilosActuales >= 0 &&
+             data.capacidadMaxima is number && data.capacidadMaxima >= 0 &&
+             data.ultimoPrecio is number && data.ultimoPrecio >= 0 &&
+             data.fechaActualizacion is timestamp;
+    }
+
+    function isValidIncubationCycle(data) {
+      return hasOnlyAllowedFields(['userId', 'especie', 'cantidadHuevos', 'fechaInicio', 'diasIncubacion']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.especie is string && data.especie.size() > 0 && data.especie.size() <= 100 &&
+             data.cantidadHuevos is number && data.cantidadHuevos >= 0 &&
+             data.fechaInicio is timestamp &&
+             data.diasIncubacion is number && data.diasIncubacion > 0;
+    }
+
+    function isValidTransaction(data) {
+      return hasOnlyAllowedFields(['userId', 'type', 'category', 'amount', 'date', 'description']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.type in ['income', 'expense'] &&
+             data.category is string && data.category.size() > 0 && data.category.size() <= 100 &&
+             data.amount is number && data.amount > 0 &&
+             data.date is timestamp &&
+             data.description is string && data.description.size() <= 500;
+    }
+
+    function isValidHealthRecord(data) {
+      return hasOnlyAllowedFields(['userId', 'lote', 'type', 'date', 'notes']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.lote is string && data.lote.size() > 0 && data.lote.size() <= 100 &&
+             data.type in ['Vacuna', 'Vitamina', 'Curación', 'Desparasitación'] &&
+             data.date is timestamp &&
+             data.notes is string && data.notes.size() <= 500;
+    }
+
+    function isValidLote(data) {
+      return hasOnlyAllowedFields(['userId', 'nombre', 'especie', 'cantidad', 'fechaIngreso', 'salud']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.nombre is string && data.nombre.size() > 0 && data.nombre.size() <= 100 &&
+             data.especie is string && data.especie.size() > 0 && data.especie.size() <= 100 &&
+             data.cantidad is number && data.cantidad >= 0 &&
+             data.fechaIngreso is string && data.fechaIngreso.size() > 0 && data.fechaIngreso.size() <= 50 &&
+             data.salud is string && data.salud.size() > 0 && data.salud.size() <= 50;
+    }
+
+    function isValidRegistroDiario(data) {
+      return hasOnlyAllowedFields(['userId', 'loteId', 'huevos', 'bajas', 'alimento', 'fecha']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.loteId is string && data.loteId.size() > 0 && data.loteId.size() <= 100 &&
+             data.huevos is number && data.huevos >= 0 &&
+             data.bajas is number && data.bajas >= 0 &&
+             data.alimento is number && data.alimento >= 0 &&
+             data.fecha is timestamp;
+    }
+
+    function isValidInventario(data) {
+      return hasOnlyAllowedFields(['userId', 'tipo', 'cantidad', 'costoTotal', 'fecha']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.tipo is string && data.tipo.size() > 0 && data.tipo.size() <= 100 &&
+             data.cantidad is number && data.cantidad >= 0 &&
+             data.costoTotal is number && data.costoTotal >= 0 &&
+             data.fecha is timestamp;
+    }
+
+    function isValidIncubadora(data) {
+      return hasOnlyAllowedFields(['userId', 'especie', 'cantidadHuevos', 'fechaInicio']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.especie is string && data.especie.size() > 0 && data.especie.size() <= 100 &&
+             data.cantidadHuevos is number && data.cantidadHuevos > 0 &&
+             data.fechaInicio is timestamp;
+    }
+
+    function isValidSanidad(data) {
+      return hasOnlyAllowedFields(['userId', 'loteId', 'loteNombre', 'tipo', 'detalle', 'fecha']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.loteId is string && data.loteId.size() > 0 && data.loteId.size() <= 100 &&
+             data.loteNombre is string && data.loteNombre.size() > 0 && data.loteNombre.size() <= 100 &&
+             data.tipo in ['Vacuna', 'Enfermedad', 'Tratamiento', 'Vitaminas'] &&
+             data.detalle is string && data.detalle.size() > 0 && data.detalle.size() <= 500 &&
+             data.fecha is timestamp;
+    }
+
+    function isValidUsuario(data) {
+      return hasOnlyAllowedFields(['userId', 'nombreGranja']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.nombreGranja is string && data.nombreGranja.size() <= 100;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      // Users can only read their own profile
+      allow read: if isOwner(userId);
+      
+      // Users can create their own profile. They cannot set isPremium to true upon creation.
+      allow create: if isOwner(userId) && 
+                       isValidUser(request.resource.data) && 
+                       (!('isPremium' in request.resource.data) || request.resource.data.isPremium == false);
+      
+      // Users can update their own profile. They can simulate isPremium for testing.
+      allow update: if isOwner(userId) && 
+                       isValidUser(request.resource.data) &&
+                       (!('email' in request.resource.data.diff(resource.data).affectedKeys()));
+                       
+      allow delete: if false; // Deletion not allowed from client
+    }
+
+    match /production_logs/{logId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidProductionLog(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidProductionLog(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /inventory/{itemId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidInventoryItem(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidInventoryItem(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /incubation_cycles/{cycleId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidIncubationCycle(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidIncubationCycle(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidTransaction(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidTransaction(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /health_records/{recordId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidHealthRecord(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidHealthRecord(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /Lotes/{loteId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidLote(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidLote(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /RegistrosDiarios/{registroId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidRegistroDiario(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidRegistroDiario(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /Inventario/{inventarioId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidInventario(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidInventario(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /Incubadoras/{incubadoraId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidIncubadora(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidIncubadora(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /Sanidad/{sanidadId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidSanidad(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidSanidad(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /Usuarios/{usuarioId} {
+      allow read: if isAuthenticated() && usuarioId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidUsuario(request.resource.data) && request.resource.data.userId == usuarioId;
+      allow update: if isAuthenticated() && usuarioId == request.auth.uid && isValidUsuario(request.resource.data) && request.resource.data.userId == usuarioId;
+      allow delete: if isAuthenticated() && usuarioId == request.auth.uid;
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "AgroAves",
+  "description": "Asistente experto para criadores de aves, proporcionando perfiles, hábitat, nutrición, salud y consejos prácticos.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,383 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a user in the AgroAves application.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "experienceLevel": {
+          "type": "string",
+          "enum": ["Principiante", "Intermedio", "Experto"],
+          "description": "The user's selected experience level."
+        },
+        "isPremium": {
+          "type": "boolean",
+          "description": "Whether the user has an active premium subscription."
+        }
+      },
+      "required": ["email", "experienceLevel", "isPremium"]
+    },
+    "ProductionLog": {
+      "title": "ProductionLog",
+      "description": "Represents a daily egg production record for a specific flock (lote).",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this record."
+        },
+        "loteId": {
+          "type": "number",
+          "description": "The ID of the flock (lote)."
+        },
+        "cantidad": {
+          "type": "number",
+          "description": "The number of eggs collected."
+        },
+        "fecha": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the record."
+        }
+      },
+      "required": ["userId", "loteId", "cantidad", "fecha"]
+    },
+    "InventoryItem": {
+      "title": "InventoryItem",
+      "description": "Represents a feed inventory item.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this record."
+        },
+        "nombre": {
+          "type": "string",
+          "description": "The name or brand of the feed."
+        },
+        "kilosActuales": {
+          "type": "number",
+          "description": "Current stock in kilos."
+        },
+        "capacidadMaxima": {
+          "type": "number",
+          "description": "Maximum capacity for progress bar calculation."
+        },
+        "ultimoPrecio": {
+          "type": "number",
+          "description": "Last purchase price."
+        },
+        "fechaActualizacion": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the last update."
+        }
+      },
+      "required": ["userId", "nombre", "kilosActuales", "capacidadMaxima", "ultimoPrecio", "fechaActualizacion"]
+    },
+    "IncubationCycle": {
+      "title": "IncubationCycle",
+      "description": "Represents an incubation cycle.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this record."
+        },
+        "especie": {
+          "type": "string",
+          "description": "The species being incubated."
+        },
+        "cantidadHuevos": {
+          "type": "number",
+          "description": "The number of eggs."
+        },
+        "fechaInicio": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The start date of the incubation."
+        },
+        "diasIncubacion": {
+          "type": "number",
+          "description": "The total number of days for incubation."
+        }
+      },
+      "required": ["userId", "especie", "cantidadHuevos", "fechaInicio", "diasIncubacion"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Represents a financial transaction.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this record."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["income", "expense"],
+          "description": "The type of transaction."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the transaction."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the transaction."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the transaction."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the transaction."
+        }
+      },
+      "required": ["userId", "type", "category", "amount", "date", "description"]
+    },
+    "Lote": {
+      "title": "Lote",
+      "description": "Represents a flock of birds.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this record."
+        },
+        "nombre": {
+          "type": "string",
+          "description": "The name of the flock."
+        },
+        "especie": {
+          "type": "string",
+          "description": "The species of the flock."
+        },
+        "cantidad": {
+          "type": "number",
+          "description": "The number of birds in the flock."
+        },
+        "fechaIngreso": {
+          "type": "string",
+          "description": "The date the flock was added."
+        },
+        "salud": {
+          "type": "string",
+          "description": "The health status of the flock."
+        }
+      },
+      "required": ["userId", "nombre", "especie", "cantidad", "fechaIngreso", "salud"]
+    },
+    "RegistroDiario": {
+      "title": "RegistroDiario",
+      "description": "Represents a daily record of eggs, deaths, and feed for a flock.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this record."
+        },
+        "loteId": {
+          "type": "string",
+          "description": "The ID of the flock."
+        },
+        "huevos": {
+          "type": "number",
+          "description": "The number of eggs collected."
+        },
+        "bajas": {
+          "type": "number",
+          "description": "The number of dead birds."
+        },
+        "alimento": {
+          "type": "number",
+          "description": "The amount of feed consumed in kg."
+        },
+        "fecha": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the record."
+        }
+      },
+      "required": ["userId", "loteId", "huevos", "bajas", "alimento", "fecha"]
+    },
+    "Inventario": {
+      "title": "Inventario",
+      "description": "Represents a feed or supply purchase.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this record."
+        },
+        "tipo": {
+          "type": "string",
+          "description": "The type of feed or supply."
+        },
+        "cantidad": {
+          "type": "number",
+          "description": "The amount purchased in kg or units."
+        },
+        "costoTotal": {
+          "type": "number",
+          "description": "The total cost in USD."
+        },
+        "fecha": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the purchase."
+        }
+      },
+      "required": ["userId", "tipo", "cantidad", "costoTotal", "fecha"]
+    },
+    "Incubadora": {
+      "title": "Incubadora",
+      "description": "Represents an incubation cycle.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this record."
+        },
+        "especie": {
+          "type": "string",
+          "description": "The species being incubated."
+        },
+        "cantidadHuevos": {
+          "type": "number",
+          "description": "The number of eggs."
+        },
+        "fechaInicio": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The start date of the incubation."
+        }
+      },
+      "required": ["userId", "especie", "cantidadHuevos", "fechaInicio"]
+    },
+    "Sanidad": {
+      "title": "Sanidad",
+      "description": "Represents a health or medical record for a flock.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this record."
+        },
+        "loteId": {
+          "type": "string",
+          "description": "The ID of the affected flock."
+        },
+        "loteNombre": {
+          "type": "string",
+          "description": "The name of the affected flock."
+        },
+        "tipo": {
+          "type": "string",
+          "description": "The type of record (Vacuna, Enfermedad, Tratamiento, Vitaminas)."
+        },
+        "detalle": {
+          "type": "string",
+          "description": "Details or product used."
+        },
+        "fecha": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date of the record."
+        }
+      },
+      "required": ["userId", "loteId", "loteNombre", "tipo", "detalle", "fecha"]
+    },
+    "Usuario": {
+      "title": "Usuario",
+      "description": "Represents user profile settings.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user."
+        },
+        "nombreGranja": {
+          "type": "string",
+          "description": "The name of the farm."
+        }
+      },
+      "required": ["userId", "nombreGranja"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Stores user profiles."
+    },
+    "production_logs/{logId}": {
+      "schema": {
+        "$ref": "#/entities/ProductionLog"
+      },
+      "description": "Stores daily egg production records."
+    },
+    "inventory/{itemId}": {
+      "schema": {
+        "$ref": "#/entities/InventoryItem"
+      },
+      "description": "Stores feed inventory items."
+    },
+    "incubation_cycles/{cycleId}": {
+      "schema": {
+        "$ref": "#/entities/IncubationCycle"
+      },
+      "description": "Stores incubation cycles."
+    },
+    "transactions/{transactionId}": {
+      "schema": {
+        "$ref": "#/entities/Transaction"
+      },
+      "description": "Stores financial transactions."
+    },
+    "Lotes/{loteId}": {
+      "schema": {
+        "$ref": "#/entities/Lote"
+      },
+      "description": "Stores flocks of birds."
+    },
+    "RegistrosDiarios/{registroId}": {
+      "schema": {
+        "$ref": "#/entities/RegistroDiario"
+      },
+      "description": "Stores daily records of eggs, deaths, and feed."
+    },
+    "Inventario/{inventarioId}": {
+      "schema": {
+        "$ref": "#/entities/Inventario"
+      },
+      "description": "Stores feed and supply purchases."
+    },
+    "Incubadoras/{incubadoraId}": {
+      "schema": {
+        "$ref": "#/entities/Incubadora"
+      },
+      "description": "Stores incubation cycles."
+    },
+    "Sanidad/{sanidadId}": {
+      "schema": {
+        "$ref": "#/entities/Sanidad"
+      },
+      "description": "Stores health and medical records."
+    },
+    "Usuarios/{usuarioId}": {
+      "schema": {
+        "$ref": "#/entities/Usuario"
+      },
+      "description": "Stores user profile settings."
+    }
+  }
+}
